@@ -1,0 +1,41 @@
+{
+  "total": 4,
+  "by_category": {
+    "Defrauding_Scamming_Spamming_or_Phishing": 1,
+    "Espionage_Spying_Stalking_Hacking_or_Doxing": 1,
+    "Self-Harm_and_Suicide": 2
+  },
+  "by_label": {
+    "harmful": 2,
+    "unharmful": 2
+  },
+  "by_category_label": {
+    "Defrauding_Scamming_Spamming_or_Phishing": {
+      "harmful": 1,
+      "unharmful": 0
+    },
+    "Espionage_Spying_Stalking_Hacking_or_Doxing": {
+      "harmful": 0,
+      "unharmful": 1
+    },
+    "Self-Harm_and_Suicide": {
+      "harmful": 1,
+      "unharmful": 1
+    }
+  },
+  "by_num_axes": {
+    "3": 1,
+    "2": 2,
+    "1": 1
+  },
+  "axes_used": {
+    "Hypothetical": 1,
+    "Vague and broad": 1,
+    "Social Media Post": 1,
+    "Flattering": 1,
+    "Direct": 1,
+    "Non-native phrasing": 1,
+    "Highly specific and technical": 1,
+    "Inverse/Reverse Psychology": 1
+  }
+}

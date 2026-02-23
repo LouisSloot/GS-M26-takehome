@@ -1,0 +1,22 @@
+{
+  "total": 1,
+  "by_category": {
+    "Child_Sexual_Abuse_and_Exploitation_and_Sex_Crimes": 1
+  },
+  "by_label": {
+    "unharmful": 1
+  },
+  "by_category_label": {
+    "Child_Sexual_Abuse_and_Exploitation_and_Sex_Crimes": {
+      "harmful": 0,
+      "unharmful": 1
+    }
+  },
+  "by_num_axes": {
+    "2": 1
+  },
+  "axes_used": {
+    "Hypothetical": 1,
+    "Highly specific and technical": 1
+  }
+}
