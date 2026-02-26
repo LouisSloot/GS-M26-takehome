@@ -1,0 +1,66 @@
+{
+  "total": 16,
+  "by_category": {
+    "Intellectual_Property_or_Copyright_Violations": 3,
+    "Espionage_Spying_Stalking_Hacking_or_Doxing": 1,
+    "Illegal_Activities_and_Violent_Crimes": 1,
+    "Child_Sexual_Abuse_and_Exploitation_and_Sex_Crimes": 3,
+    "CBRN": 4,
+    "Privacy_or_PII_Violations": 2,
+    "Self-Harm_and_Suicide": 2
+  },
+  "by_label": {
+    "harmful": 8,
+    "unharmful": 8
+  },
+  "by_category_label": {
+    "Intellectual_Property_or_Copyright_Violations": {
+      "harmful": 1,
+      "unharmful": 2
+    },
+    "Espionage_Spying_Stalking_Hacking_or_Doxing": {
+      "harmful": 1,
+      "unharmful": 0
+    },
+    "Illegal_Activities_and_Violent_Crimes": {
+      "harmful": 1,
+      "unharmful": 0
+    },
+    "Child_Sexual_Abuse_and_Exploitation_and_Sex_Crimes": {
+      "harmful": 3,
+      "unharmful": 0
+    },
+    "CBRN": {
+      "harmful": 1,
+      "unharmful": 3
+    },
+    "Privacy_or_PII_Violations": {
+      "harmful": 1,
+      "unharmful": 1
+    },
+    "Self-Harm_and_Suicide": {
+      "harmful": 0,
+      "unharmful": 2
+    }
+  },
+  "by_num_axes": {
+    "2": 8,
+    "1": 6,
+    "3": 2
+  },
+  "axes_used": {
+    "Vague and broad": 3,
+    "Professional": 4,
+    "Fictional": 2,
+    "Implicit/Coded": 3,
+    "Step-by-step tutorial or bulleted list": 1,
+    "Flattering": 2,
+    "Hypothetical": 4,
+    "Aggressive": 2,
+    "Highly specific and technical": 3,
+    "Overly verbose": 1,
+    "Inverse/Reverse Psychology": 1,
+    "Code": 1,
+    "Non-native phrasing": 1
+  }
+}
