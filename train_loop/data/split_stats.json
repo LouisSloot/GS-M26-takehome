@@ -1,0 +1,25 @@
+{
+  "n_train": 12166,
+  "n_val": 1350,
+  "n_total": 13516,
+  "n_1turn": 7040,
+  "n_2turn": 6476,
+  "by_label_train": {
+    "harmful": 4823,
+    "unharmful": 7343
+  },
+  "by_label_val": {
+    "unharmful": 815,
+    "harmful": 535
+  },
+  "by_convo_length_train": {
+    "2": 5832,
+    "1": 6334
+  },
+  "by_convo_length_val": {
+    "1": 706,
+    "2": 644
+  },
+  "val_ratio": 0.1,
+  "seed": 42
+}
