@@ -15,7 +15,10 @@ From repo root:
 # 1. Generate train/val splits (run once after data updates)
 python train_loop/prepare_data.py
 
-# 2. In training code
+# 2. Train (DeBERTa full finetune, Colab A100 friendly)
+python train_loop/train.py --output_dir ./outputs/deberta-harm-v1
+
+# Or use as a module
 from train_loop.dataset import get_dataloaders, get_tokenizer
 
 train_loader, val_loader = get_dataloaders(train_batch_size=16, num_workers=0)
@@ -25,9 +28,10 @@ train_loader, val_loader = get_dataloaders(train_batch_size=16, num_workers=0)
 
 - **prepare_data.py:** stdlib only.
 - **dataset.py:** `torch`, `transformers`, and for DeBERTa tokenizer: `sentencepiece`, `protobuf`.
+- **train.py:** above + `scikit-learn` (metrics), `accelerate` (Trainer).
 
 ```bash
-pip install torch transformers sentencepiece protobuf
+pip install torch transformers sentencepiece protobuf scikit-learn accelerate
 ```
 
 ## Config
