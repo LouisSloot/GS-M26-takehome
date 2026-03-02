@@ -93,4 +93,8 @@ class PromptExpansionTask(Task):
             expanded = input["seed_prompt"] if input else ""
         else:
             expanded = str(output).strip()
-        return {"expanded_prompt": expanded}
+        result: Dict[str, Any] = {"expanded_prompt": expanded}
+        # Pass through turn_type for eval structure
+        if input and "turn_type" in input:
+            result["turn_type"] = input["turn_type"]
+        return result

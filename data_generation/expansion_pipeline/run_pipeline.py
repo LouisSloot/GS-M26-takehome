@@ -3,6 +3,7 @@
 import argparse
 import os
 import shutil
+import sys
 from pathlib import Path
 
 from distilabel.pipeline import Pipeline
@@ -11,7 +12,7 @@ from expansion_pipeline.config import DEFAULT_DATA_DIR, EXPANDED_OUTPUT_DIR
 from expansion_pipeline.export_expanded import ExportExpandedStep
 from expansion_pipeline.load_seeds import LoadSeedsFromCSV
 from expansion_pipeline.prompt_expansion import PromptExpansionTask
-from expansion_pipeline.seed_utils import load_all_seeds
+from expansion_pipeline.seed_utils import load_all_seeds, load_all_seeds_from_eval_dir
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -20,6 +21,7 @@ def create_pipeline(
     llm,
     data_dir: Path | str = DEFAULT_DATA_DIR,
     output_dir: Path | str = EXPANDED_OUTPUT_DIR,
+    structure: str = "flat",
     num_variations_per_seed: int = 9,
     seed: int | None = 42,
     batch_size: int = 2,
@@ -31,8 +33,9 @@ def create_pipeline(
 
     Args:
         llm: distilabel LLM instance (e.g. OllamaLLM, vLLM, InferenceEndpointsLLM)
-        data_dir: Path to seed_prompts/generated
-        output_dir: Path to seed_prompts/expanded_all
+        data_dir: Path to seed prompts (flat: seed_prompts/generated, eval: test_data_outputs)
+        output_dir: Path for expanded output
+        structure: "flat" for train seeds, "eval" for eval seeds (category/n_turn/label)
         num_variations_per_seed: Number of variations per seed (default 9)
         seed: Random seed for reproducibility (or None)
         batch_size: Batch size for loading and expansion
@@ -42,7 +45,8 @@ def create_pipeline(
     output_dir_str = str(output_dir)
 
     # Compute total tasks for progress logging
-    seeds = load_all_seeds(Path(data_dir) if isinstance(data_dir, str) else data_dir)
+    data_path = Path(data_dir) if isinstance(data_dir, str) else data_dir
+    seeds = load_all_seeds_from_eval_dir(data_path) if structure == "eval" else load_all_seeds(data_path)
     total_tasks = len(seeds) * num_variations_per_seed if seeds else 0
     if max_tasks is not None:
         total_tasks = min(total_tasks, max_tasks)
@@ -51,6 +55,7 @@ def create_pipeline(
         load_seeds = LoadSeedsFromCSV(
             name="load_seeds",
             data_dir=data_dir_str,
+            structure=structure,
             num_variations_per_seed=num_variations_per_seed,
             seed=seed,
             batch_size=batch_size,
@@ -72,7 +77,7 @@ def create_pipeline(
 
         load_seeds >> expand >> export
 
-    return pipeline
+    return pipeline, total_tasks, len(seeds) if seeds else 0
 
 
 def _clear_pipeline_cache() -> None:
@@ -94,6 +99,36 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Run prompt expansion pipeline")
     parser.add_argument(
+        "--data-dir",
+        type=Path,
+        default=None,
+        help="Input directory (default: seed_prompts/generated for flat, test_data_outputs for eval)",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=None,
+        help="Output directory (default: seed_prompts/expanded_all for flat, test_data_outputs/expanded for eval)",
+    )
+    parser.add_argument(
+        "--structure",
+        choices=("flat", "eval"),
+        default="flat",
+        help="flat = train seeds {category}/{label}.csv; eval = {category}/{n}_turn/{label}.csv",
+    )
+    parser.add_argument(
+        "--num-variations",
+        type=int,
+        default=9,
+        help="Variations per seed (default: 9)",
+    )
+    parser.add_argument(
+        "--max-tasks",
+        type=int,
+        default=None,
+        help="Limit tasks (for testing)",
+    )
+    parser.add_argument(
         "--clear-pipeline-cache",
         action="store_true",
         help="Clear cached pipeline config before run (use once after code changes to export/step config)",
@@ -103,21 +138,44 @@ if __name__ == "__main__":
     if args.clear_pipeline_cache:
         _clear_pipeline_cache()
 
+    # Default paths by structure
+    if args.structure == "eval":
+        # Project root (expansion_pipeline -> data_generation -> project root)
+        repo_root = Path(__file__).resolve().parent.parent.parent
+        default_data = repo_root / "test_data_outputs" / "raw_seeds"  # seeds live here
+        default_output = repo_root / "test_data_outputs" / "expanded"
+    else:
+        default_data = DEFAULT_DATA_DIR
+        default_output = EXPANDED_OUTPUT_DIR
+
+    data_dir = args.data_dir if args.data_dir is not None else default_data
+    output_dir = args.output_dir if args.output_dir is not None else default_output
+
     llm = OpenAILLM(
         model=OPENROUTER_MODEL,
         api_key=OPENROUTER_API_KEY,
         base_url=OPENROUTER_BASE_URL,
     )
 
-    # Same logic as test pipeline; only output_dir, max_tasks, and pipeline_name differ
-    pipeline = create_pipeline(
+    pipeline, total_tasks, num_seeds = create_pipeline(
         llm=llm,
-        data_dir=str(DEFAULT_DATA_DIR),
-        output_dir=str(EXPANDED_OUTPUT_DIR),
-        num_variations_per_seed=9,
+        data_dir=str(data_dir),
+        output_dir=str(output_dir),
+        structure=args.structure,
+        num_variations_per_seed=args.num_variations,
         seed=42,
         batch_size=BATCH_SIZE,
-        max_tasks=None,  # Full run, no limit
-        pipeline_name="prompt-expansion",
+        max_tasks=args.max_tasks,
+        pipeline_name="prompt-expansion-eval" if args.structure == "eval" else "prompt-expansion",
     )
+
+    print(f"Expansion pipeline: {num_seeds:,} seeds × {args.num_variations} variations = {total_tasks:,} tasks")
+    print(f"Input:  {data_dir}")
+    print(f"Output: {output_dir}")
+    if total_tasks == 0:
+        print("No tasks to run. Check that input dir has structure: {category}/1_turn,2_turn,3_turn/{harmful,unharmful}_prompts.csv")
+        sys.exit(1)
+    print("Running...")
     pipeline.run(use_cache=False)
+    print()  # newline after \r progress
+    print("Done.")

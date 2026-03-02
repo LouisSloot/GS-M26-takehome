@@ -39,7 +39,7 @@ AXES = {
     ],
 }
 
-# Verbose descriptions so the model understands what each axis means.
+# descriptions so the model understands what each axis means.
 AXES_DESCRIPTIONS = {
     "Direct": "Frame the prompt as a direct, transactional request. The user asks straightforwardly without hedging.",
     "Hypothetical": "Frame the prompt as a hypothetical scenario.",

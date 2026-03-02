@@ -91,3 +91,38 @@ def load_all_seeds(data_dir: Path) -> list[dict]:
                 })
 
     return seeds
+
+
+def load_all_seeds_from_eval_dir(data_dir: Path) -> list[dict]:
+    """
+    Load seeds from eval structure: {category}/{n}_turn/{label}_prompts.csv
+    Returns list of {seed_prompt, category, label, turn_type}.
+    """
+    seeds = []
+    turn_subdirs = ["1_turn", "2_turn", "3_turn"]
+    for category in CATEGORY_FOLDERS:
+        category_path = data_dir / category
+        if not category_path.is_dir():
+            continue
+
+        for turn_subdir in turn_subdirs:
+            turn_path = category_path / turn_subdir
+            if not turn_path.is_dir():
+                continue
+
+            turn_type = int(turn_subdir.split("_")[0])
+            for label, filename in [("harmful", "harmful_prompts.csv"), ("unharmful", "unharmful_prompts.csv")]:
+                csv_path = turn_path / filename
+                if not csv_path.exists():
+                    continue
+
+                prompts = load_prompts_from_csv(csv_path)
+                for prompt in prompts:
+                    seeds.append({
+                        "seed_prompt": prompt,
+                        "category": category,
+                        "label": label,
+                        "turn_type": turn_type,
+                    })
+
+    return seeds

@@ -36,6 +36,7 @@ class ExportExpandedStep(Step):
     def load(self) -> None:
         super().load()
         self._file_handles: Dict[str, tuple] = {}  # key -> (file_obj, csv.writer)
+        self._last_seed_by_file: Dict[str, str] = {}  # file_key -> last seed_prompt written (for original, 1, 2, 3 order)
         self._stats: Dict[str, Any] = {
             "total": 0,
             "by_category": Counter(),
@@ -45,14 +46,20 @@ class ExportExpandedStep(Step):
             "axes_used": Counter(),
         }
 
-    def _get_writer(self, category: str, label: str) -> csv.writer:
-        key = f"{category}/{label}"
+    def _get_writer(self, category: str, label: str, turn_type: int | None = None) -> csv.writer:
+        if turn_type is not None:
+            key = f"{category}/{turn_type}_turn/{label}"
+        else:
+            key = f"{category}/{label}"
         if key not in self._file_handles:
             out_dir = Path(self.output_dir) if isinstance(self.output_dir, str) else self.output_dir
-            category_dir = out_dir / category
+            if turn_type is not None:
+                category_dir = out_dir / category / f"{turn_type}_turn"
+            else:
+                category_dir = out_dir / category
             category_dir.mkdir(parents=True, exist_ok=True)
             filepath = category_dir / f"{label}_prompts.csv"
-            f = open(filepath, "a", newline="", encoding="utf-8")
+            f = open(filepath, "w", newline="", encoding="utf-8")
             writer = csv.writer(f, quoting=csv.QUOTE_MINIMAL)
             self._file_handles[key] = (f, writer)
         return self._file_handles[key][1]
@@ -123,9 +130,21 @@ class ExportExpandedStep(Step):
             category = row.get("category", "")
             label = row.get("label", "")
             axes_str = row.get("axes", "[]")
+            turn_type = row.get("turn_type")  # Present when structure="eval"
+            seed_prompt = str(row.get("seed_prompt") or "").strip()
 
-            # Write to CSV
-            writer = self._get_writer(category, label)
+            # File key for "last seed" tracking (same as _get_writer key)
+            if turn_type is not None:
+                file_key = f"{category}/{turn_type}_turn/{label}"
+            else:
+                file_key = f"{category}/{label}"
+
+            writer = self._get_writer(category, label, turn_type)
+            # Per-seed order: original, then variation 1, 2, 3 (load step emits in order)
+            last_seed = self._last_seed_by_file.get(file_key)
+            if seed_prompt and seed_prompt != last_seed:
+                writer.writerow([seed_prompt])
+                self._last_seed_by_file[file_key] = seed_prompt
             writer.writerow([expanded])
 
             # Update stats
@@ -144,14 +163,16 @@ class ExportExpandedStep(Step):
 
         self._write_stats()
 
-        # Log progress
+        # Show progress (stdout so it's always visible)
         total = self._stats["total"]
         if self.total_tasks is not None and self.total_tasks > 0:
             pct = 100 * total / self.total_tasks
+            print(f"\r  Expanded {total:,}/{self.total_tasks:,} ({pct:.1f}%)", end="", flush=True)
             self._logger.info(
                 f"📊 Expanded {total:,}/{self.total_tasks:,} prompts ({pct:.1f}%)"
             )
         else:
+            print(f"\r  Expanded {total:,} prompts", end="", flush=True)
             self._logger.info(f"📊 Expanded {total:,} prompts")
 
         yield inputs
