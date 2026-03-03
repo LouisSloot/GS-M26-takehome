@@ -4,12 +4,15 @@ Step 6: Full finetune DeBERTa-v3-base for binary harm classification.
 Uses train_loop/data (train.jsonl, val.jsonl) from prepare_data.py + dataset.py.
 Designed to run on Colab with A100.
 
+Writes logs (loss, metrics) to output_dir/train.log.
+
 Usage (Colab or local):
   python train_loop/train.py --output_dir ./outputs/deberta-harm-v1
   python train_loop/train.py --output_dir ./outputs/deberta-harm-v1 --epochs 3 --batch_size 32
 """
 
 import argparse
+import logging
 import random
 import sys
 from pathlib import Path
@@ -36,6 +39,27 @@ from train_loop.config import (
     VAL_JSONL,
 )
 from train_loop.dataset import get_tokenizer, get_datasets
+
+
+def setup_logging(log_path: Path) -> None:
+    """
+    Add a file handler so training logs (loss, metrics) are written to log_path.
+    Logs to both file and console.
+    """
+    log_path = Path(log_path)
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    fmt = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    file_handler = logging.FileHandler(log_path, mode="a", encoding="utf-8")
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(fmt)
+    console_handler = logging.StreamHandler(sys.stderr)
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(fmt)
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    root.addHandler(file_handler)
+    root.addHandler(console_handler)
+    logging.getLogger("transformers").setLevel(logging.INFO)
 
 
 def set_seed(seed: int) -> None:
@@ -153,6 +177,7 @@ def parse_args():
     parser.add_argument("--lr", type=float, default=2e-5, help="Learning rate")
     parser.add_argument("--warmup_ratio", type=float, default=0.1, help="Warmup over this fraction of steps")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
+    parser.add_argument("--log_file", type=Path, default=None, help="Log file path (default: {output_dir}/train.log)")
     # Add more as needed: --eval_steps, --save_steps, --fp16/--bf16, etc.
     return parser.parse_args()
 
@@ -160,12 +185,19 @@ def parse_args():
 def main() -> int:
     args = parse_args()
     output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    log_path = args.log_file if args.log_file else output_dir / "train.log"
+    setup_logging(log_path)
+    logger = logging.getLogger(__name__)
+    logger.info("Logging to %s", log_path)
+    logger.info("Training config: %s", vars(args))
+
     data_dir = args.data_dir or Path(__file__).resolve().parent / "data"
     train_jsonl = data_dir / "train.jsonl"
     val_jsonl = data_dir / "val.jsonl"
 
     if not train_jsonl.exists() or not val_jsonl.exists():
-        print(f"Missing data: {train_jsonl} or {val_jsonl}. Run prepare_data.py first.", file=sys.stderr)
+        logger.error("Missing data: %s or %s. Run prepare_data.py first.", train_jsonl, val_jsonl)
         return 1
 
     set_seed(args.seed)
@@ -190,6 +222,7 @@ def main() -> int:
         warmup_ratio=args.warmup_ratio,
         seed=args.seed,
     )
+    logger.info("Training complete. Model saved to %s", output_dir)
     return 0
 
 
