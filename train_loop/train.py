@@ -27,6 +27,7 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 from transformers import (
     AutoModelForSequenceClassification,
     Trainer,
+    TrainerCallback,
     TrainingArguments,
 )
 from transformers import set_seed as hf_set_seed
@@ -80,6 +81,24 @@ def get_model(model_name: str = TOKENIZER_NAME, num_labels: int = NUM_LABELS):
         id2label=ID_TO_LABEL,
         label2id={v: k for k, v in ID_TO_LABEL.items()},
     )
+
+
+class MetricsLoggingCallback(TrainerCallback):
+    """Logs loss and eval metrics to the configured logger (so they appear in train.log)."""
+
+    def __init__(self, logger: logging.Logger):
+        self.logger = logger
+
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        if logs:
+            def fmt(v):
+                try:
+                    return f"{float(v):.6f}"
+                except (TypeError, ValueError):
+                    return str(v)
+
+            parts = [f"{k}={fmt(v)}" for k, v in logs.items()]
+            self.logger.info("step %d | %s", state.global_step, " | ".join(parts))
 
 
 def compute_metrics(eval_pred):
@@ -152,6 +171,7 @@ def train(
         report_to="none",
     )
 
+    metrics_logger = logging.getLogger("train_loop.train")
     trainer = Trainer(
         model=model,
         args=args,
@@ -159,6 +179,7 @@ def train(
         eval_dataset=eval_dataset,
         processing_class=tokenizer,
         compute_metrics=compute_metrics,
+        callbacks=[MetricsLoggingCallback(metrics_logger)],
     )
 
     trainer.train()
