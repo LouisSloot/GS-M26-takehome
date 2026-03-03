@@ -7,9 +7,12 @@ and reports: AUPR, ROC-AUC, FPR @ TPR 90%, FPR @ TPR 95%.
 Also outputs a 10-sample subset of predicted probabilities for deliverables.
 
 Usage:
-  python train_loop/eval_deberta.py --model_path outputs/deberta-harm-v1
-  python train_loop/eval_deberta.py --model_path outputs/deberta-harm-v1/checkpoint-2200 --data_dir test_data_outputs/formatted
-  python train_loop/eval_deberta.py --model_path outputs/deberta-harm-v1 --max_samples 500 --output results/eval_deberta.json
+  python train_loop/eval_deberta.py --model_path outputs/deberta-harm-v1 --output results/eval_deberta.json
+  python train_loop/eval_deberta.py --model_path outputs/deberta-harm-v1/checkpoint-2200 --use_completed
+  python train_loop/eval_deberta.py --model_path outputs/deberta-harm-v1 --max_samples 500
+
+Note: For valid ROC/FPR-at-TPR, the eval set must include both harmful and unharmful samples.
+Use the full eval set (omit --max_samples) for final numbers.
 """
 
 import argparse
@@ -19,6 +22,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+from tqdm import tqdm
 from sklearn.metrics import (
     average_precision_score,
     roc_auc_score,
@@ -73,7 +77,7 @@ class EvalDataset(Dataset):
     def __getitem__(self, idx: int) -> dict:
         ex = self.examples[idx]
         messages = ex.get("messages", [])
-        text = serialize_messages(messages) if messages else ""
+        text = serialize_messages(messages) if messages else (ex.get("text") or "")
         enc = self.tokenizer(
             text,
             max_length=self.max_length,
@@ -97,7 +101,7 @@ def run_inference(
     model.eval()
     all_probs = []
 
-    for batch in dataloader:
+    for batch in tqdm(dataloader, desc="Inference", unit="batch"):
         input_ids = batch["input_ids"].to(device)
         attention_mask = batch["attention_mask"].to(device)
         logits = model(input_ids=input_ids, attention_mask=attention_mask).logits
@@ -116,7 +120,9 @@ def run_inference(
 
 
 def fpr_at_tpr(y_true: np.ndarray, y_prob: np.ndarray, tpr_target: float) -> float:
-    """Compute FPR at the threshold where TPR >= tpr_target."""
+    """Compute FPR at the threshold where TPR >= tpr_target. Returns np.nan if only one class."""
+    if len(np.unique(y_true)) < 2:
+        return float("nan")
     fpr, tpr, _ = roc_curve(y_true, y_prob, pos_label=1)
     idx = np.searchsorted(tpr, tpr_target, side="left")
     if idx >= len(fpr):
@@ -141,8 +147,13 @@ def main() -> int:
     parser.add_argument(
         "--files",
         nargs="+",
-        default=["1_turn", "2_turn", "3_turn"],
-        help="JSONL filenames without .jsonl",
+        default=None,
+        help="JSONL filenames without .jsonl (default: 1_turn, 2_turn, 3_turn or _completed variants if --use_completed)",
+    )
+    parser.add_argument(
+        "--use_completed",
+        action="store_true",
+        help="Use 2_turn_completed and 3_turn_completed (full conversations with assistant responses)",
     )
     parser.add_argument(
         "--batch_size",
@@ -169,6 +180,9 @@ def main() -> int:
         help="Number of samples to include in output (default: 10)",
     )
     args = parser.parse_args()
+
+    if args.files is None:
+        args.files = ["1_turn", "2_turn_completed", "3_turn_completed"] if args.use_completed else ["1_turn", "2_turn", "3_turn"]
 
     model_path = args.model_path if args.model_path.is_absolute() else REPO_ROOT / args.model_path
     data_dir = args.data_dir if args.data_dir.is_absolute() else REPO_ROOT / args.data_dir
@@ -226,8 +240,17 @@ def main() -> int:
         print("No valid labels.", file=sys.stderr)
         return 1
 
-    aupr = average_precision_score(labels_valid, probs_valid, pos_label=1)
-    roc_auc = roc_auc_score(labels_valid, probs_valid)
+    # Require both classes for ROC/AUPR/FPR-at-TPR; otherwise metrics are undefined
+    n_pos = int(np.sum(labels_valid == 1))
+    n_neg = int(np.sum(labels_valid == 0))
+    if n_pos == 0 or n_neg == 0:
+        print(
+            f"Warning: only one class present (pos={n_pos}, neg={n_neg}). "
+            "ROC-AUC, FPR@TPR require both classes; those metrics will be NaN.",
+            file=sys.stderr,
+        )
+    aupr = average_precision_score(labels_valid, probs_valid, pos_label=1) if n_pos > 0 and n_neg > 0 else float("nan")
+    roc_auc = roc_auc_score(labels_valid, probs_valid) if n_pos > 0 and n_neg > 0 else float("nan")
     fpr_90 = fpr_at_tpr(labels_valid, probs_valid, 0.90)
     fpr_95 = fpr_at_tpr(labels_valid, probs_valid, 0.95)
 
@@ -238,25 +261,36 @@ def main() -> int:
     print(f"  FPR @ TPR 90%: {fpr_90:.4f}")
     print(f"  FPR @ TPR 95%: {fpr_95:.4f}")
 
-    # 10-sample subset for deliverables
+    # 10-sample subset for deliverables: full prompt (as presented to model) + probabilities
     n_sample = min(args.n_sample_display, len(examples_valid))
     indices = np.linspace(0, len(examples_valid) - 1, n_sample, dtype=int)
     sample_results = []
     for i in indices:
         ex = examples_valid[i]
-        text = serialize_messages(ex.get("messages", []))
+        msgs = ex.get("messages", [])
+        full_prompt = serialize_messages(msgs) if msgs else (ex.get("text") or "")
         sample_results.append({
-            "text_preview": text[:200] + "..." if len(text) > 200 else text,
+            "full_prompt": full_prompt,
             "label": ex.get("label"),
             "prob_harmful": float(probs_valid[i]),
         })
     print(f"\n--- {n_sample}-sample subset (predicted probabilities) ---")
     for s in sample_results:
-        print(f"  label={s['label']} prob_harmful={s['prob_harmful']:.4f}")
+        preview = (s["full_prompt"][:80] + "...") if len(s["full_prompt"]) > 80 else s["full_prompt"]
+        print(f"  label={s['label']} prob_harmful={s['prob_harmful']:.4f} | {preview}")
 
     if args.output:
         out_path = args.output if args.output.is_absolute() else REPO_ROOT / args.output
         out_path.parent.mkdir(parents=True, exist_ok=True)
+        def _sanitize(obj):
+            if isinstance(obj, float) and (obj != obj or obj == float("inf") or obj == float("-inf")):
+                return None
+            if isinstance(obj, dict):
+                return {k: _sanitize(v) for k, v in obj.items()}
+            if isinstance(obj, list):
+                return [_sanitize(x) for x in obj]
+            return obj
+
         payload = {
             "model_path": str(model_path),
             "n_samples": len(labels_valid),
@@ -264,7 +298,7 @@ def main() -> int:
             "sample_predictions": sample_results,
         }
         with open(out_path, "w", encoding="utf-8") as f:
-            json.dump(payload, f, indent=2, ensure_ascii=False)
+            json.dump(_sanitize(payload), f, indent=2, ensure_ascii=False)
         print(f"\nWrote {out_path}")
 
     return 0
