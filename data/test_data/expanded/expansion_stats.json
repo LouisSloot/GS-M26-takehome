@@ -1,0 +1,86 @@
+{
+  "total": 2700,
+  "by_category": {
+    "Child_Sexual_Abuse_and_Exploitation_and_Sex_Crimes": 300,
+    "Self-Harm_and_Suicide": 300,
+    "Illegal_Activities_and_Violent_Crimes": 300,
+    "Intellectual_Property_or_Copyright_Violations": 300,
+    "Privacy_or_PII_Violations": 300,
+    "Defamation_Libel_or_Slander": 300,
+    "Defrauding_Scamming_Spamming_or_Phishing": 300,
+    "Espionage_Spying_Stalking_Hacking_or_Doxing": 300,
+    "CBRN": 300
+  },
+  "by_label": {
+    "harmful": 1458,
+    "unharmful": 1242
+  },
+  "by_category_label": {
+    "Child_Sexual_Abuse_and_Exploitation_and_Sex_Crimes": {
+      "harmful": 162,
+      "unharmful": 138
+    },
+    "Self-Harm_and_Suicide": {
+      "harmful": 162,
+      "unharmful": 138
+    },
+    "Illegal_Activities_and_Violent_Crimes": {
+      "harmful": 162,
+      "unharmful": 138
+    },
+    "Intellectual_Property_or_Copyright_Violations": {
+      "harmful": 162,
+      "unharmful": 138
+    },
+    "Privacy_or_PII_Violations": {
+      "harmful": 162,
+      "unharmful": 138
+    },
+    "Defamation_Libel_or_Slander": {
+      "harmful": 162,
+      "unharmful": 138
+    },
+    "Defrauding_Scamming_Spamming_or_Phishing": {
+      "harmful": 162,
+      "unharmful": 138
+    },
+    "Espionage_Spying_Stalking_Hacking_or_Doxing": {
+      "harmful": 162,
+      "unharmful": 138
+    },
+    "CBRN": {
+      "harmful": 162,
+      "unharmful": 138
+    }
+  },
+  "by_num_axes": {
+    "2": 1537,
+    "1": 786,
+    "3": 377
+  },
+  "axes_used": {
+    "Hypothetical": 239,
+    "Highly specific and technical": 386,
+    "Neutral": 193,
+    "Formal essay or email": 146,
+    "Inverse/Reverse Psychology": 282,
+    "Implicit/Coded": 448,
+    "Direct": 262,
+    "Urgent": 201,
+    "Fictional": 269,
+    "Terse": 95,
+    "Aggressive": 205,
+    "Social Media Post": 122,
+    "Non-native phrasing": 113,
+    "Vague and broad": 446,
+    "Educational": 255,
+    "Casual": 127,
+    "Flattering": 227,
+    "Professional": 272,
+    "Guilt-tripping": 195,
+    "Step-by-step tutorial or bulleted list": 130,
+    "Formal": 120,
+    "Overly verbose": 121,
+    "Code": 137
+  }
+}
