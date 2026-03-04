@@ -4,7 +4,8 @@ Evaluate trained DeBERTa classifier on eval dataset.
 
 Loads a local DeBERTa checkpoint, runs inference on eval/data/test.jsonl (or --data_dir),
 and reports: AUPR, ROC-AUC, FPR @ TPR 90%, FPR @ TPR 95%.
-Also outputs a 10-sample subset of predicted probabilities for deliverables.
+Also provides performance breakdown by category and by turn length (1/2/3-turn).
+Outputs a 10-sample subset of predicted probabilities for deliverables.
 
 Usage:
   python eval/eval_deberta.py --model_path models/deberta_finetuned --output results/eval_deberta.json
@@ -24,7 +25,10 @@ import numpy as np
 import torch
 from tqdm import tqdm
 from sklearn.metrics import (
+    accuracy_score,
     average_precision_score,
+    f1_score,
+    precision_recall_curve,
     roc_auc_score,
     roc_curve,
 )
@@ -130,6 +134,36 @@ def fpr_at_tpr(y_true: np.ndarray, y_prob: np.ndarray, tpr_target: float) -> flo
     return float(fpr[idx])
 
 
+def compute_subset_metrics(
+    y_true: np.ndarray, y_prob: np.ndarray, threshold: float = 0.5
+) -> dict:
+    """Compute AUPR, ROC-AUC, FPR@TPR 90/95, accuracy, F1 for a subset. Returns dict with nan for undefined metrics."""
+    n_pos = int(np.sum(y_true == 1))
+    n_neg = int(np.sum(y_true == 0))
+    has_both = n_pos > 0 and n_neg > 0
+
+    preds = (y_prob >= threshold).astype(int)
+    acc = float(accuracy_score(y_true, preds))
+    f1 = float(f1_score(y_true, preds, pos_label=1, zero_division=0))
+
+    aupr = average_precision_score(y_true, y_prob, pos_label=1) if has_both else float("nan")
+    roc = roc_auc_score(y_true, y_prob) if has_both else float("nan")
+    fpr90 = fpr_at_tpr(y_true, y_prob, 0.90)
+    fpr95 = fpr_at_tpr(y_true, y_prob, 0.95)
+
+    return {
+        "n_samples": len(y_true),
+        "n_harmful": n_pos,
+        "n_unharmful": n_neg,
+        "AUPR": aupr,
+        "ROC_AUC": roc,
+        "FPR_at_TPR_90": fpr90,
+        "FPR_at_TPR_95": fpr95,
+        "accuracy": acc,
+        "F1_harmful": f1,
+    }
+
+
 def main() -> int:
     default_data_dir = REPO_ROOT / "eval" / "data"
     parser = argparse.ArgumentParser(description="Evaluate DeBERTa classifier on eval dataset")
@@ -174,6 +208,12 @@ def main() -> int:
         type=int,
         default=10,
         help="Number of samples to include in output (default: 10)",
+    )
+    parser.add_argument(
+        "--save_curves",
+        type=Path,
+        default=None,
+        help="Directory to save ROC and PR curve plots (e.g. figures)",
     )
     args = parser.parse_args()
 
@@ -254,6 +294,39 @@ def main() -> int:
     print(f"  FPR @ TPR 90%: {fpr_90:.4f}")
     print(f"  FPR @ TPR 95%: {fpr_95:.4f}")
 
+    # Performance by category
+    metrics_by_category = {}
+    categories = sorted(set(ex.get("category", "unknown") for ex in examples_valid))
+    for cat in categories:
+        mask = np.array([ex.get("category", "unknown") == cat for ex in examples_valid])
+        if mask.sum() == 0:
+            continue
+        y_cat = labels_valid[mask]
+        p_cat = probs_valid[mask]
+        m = compute_subset_metrics(y_cat, p_cat)
+        metrics_by_category[cat] = m
+
+    # Performance by turn length
+    metrics_by_turn_length = {}
+    for turn_len in [1, 2, 3]:
+        mask = np.array([ex.get("convo_length") in (turn_len, str(turn_len)) for ex in examples_valid])
+        if mask.sum() == 0:
+            continue
+        y_t = labels_valid[mask]
+        p_t = probs_valid[mask]
+        m = compute_subset_metrics(y_t, p_t)
+        metrics_by_turn_length[str(turn_len)] = m
+
+    print("\n--- By category ---")
+    for cat in categories:
+        if cat in metrics_by_category:
+            m = metrics_by_category[cat]
+            print(f"  {cat}: n={m['n_samples']} AUPR={m['AUPR']:.3f} ROC={m['ROC_AUC']:.3f} acc={m['accuracy']:.3f} F1={m['F1_harmful']:.3f}")
+    print("\n--- By turn length ---")
+    for k in sorted(metrics_by_turn_length.keys(), key=int):
+        m = metrics_by_turn_length[k]
+        print(f"  {k}-turn: n={m['n_samples']} AUPR={m['AUPR']:.3f} ROC={m['ROC_AUC']:.3f} acc={m['accuracy']:.3f} F1={m['F1_harmful']:.3f}")
+
     # 10-sample subset for deliverables: full prompt (as presented to model) + probabilities
     n_sample = min(args.n_sample_display, len(examples_valid))
     rng = np.random.default_rng(42)
@@ -289,11 +362,44 @@ def main() -> int:
             "model_path": str(model_path),
             "n_samples": len(labels_valid),
             "metrics": {"AUPR": aupr, "ROC_AUC": roc_auc, "FPR_at_TPR_90": fpr_90, "FPR_at_TPR_95": fpr_95},
+            "metrics_by_category": metrics_by_category,
+            "metrics_by_turn_length": metrics_by_turn_length,
             "sample_predictions": sample_results,
         }
         with open(out_path, "w", encoding="utf-8") as f:
             json.dump(_sanitize(payload), f, indent=2, ensure_ascii=False)
         print(f"\nWrote {out_path}")
+
+    # Save ROC and PR curves if requested
+    if args.save_curves:
+        curves_dir = args.save_curves if args.save_curves.is_absolute() else REPO_ROOT / args.save_curves
+        curves_dir.mkdir(parents=True, exist_ok=True)
+        import matplotlib.pyplot as plt
+
+        fpr, tpr, _ = roc_curve(labels_valid, probs_valid, pos_label=1)
+        plt.figure(figsize=(5, 4))
+        plt.plot(fpr, tpr, "b-", linewidth=2)
+        plt.plot([0, 1], [0, 1], "k--", alpha=0.5)
+        plt.xlabel("False Positive Rate")
+        plt.ylabel("True Positive Rate")
+        plt.title(f"ROC Curve (AUC = {roc_auc:.3f})")
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        plt.savefig(curves_dir / "roc_curve.png", dpi=150)
+        plt.close()
+
+        precision, recall, _ = precision_recall_curve(labels_valid, probs_valid, pos_label=1)
+        plt.figure(figsize=(5, 4))
+        plt.plot(recall, precision, "b-", linewidth=2)
+        plt.xlabel("Recall")
+        plt.ylabel("Precision")
+        plt.title(f"Precision-Recall Curve (AUPR = {aupr:.3f})")
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        plt.savefig(curves_dir / "pr_curve.png", dpi=150)
+        plt.close()
+
+        print(f"\nSaved ROC and PR curves to {curves_dir}")
 
     return 0
 
