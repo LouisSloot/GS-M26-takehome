@@ -263,7 +263,8 @@ def main() -> int:
 
     # 10-sample subset for deliverables: full prompt (as presented to model) + probabilities
     n_sample = min(args.n_sample_display, len(examples_valid))
-    indices = np.linspace(0, len(examples_valid) - 1, n_sample, dtype=int)
+    rng = np.random.default_rng(42)
+    indices = rng.choice(len(examples_valid), size=n_sample, replace=False)
     sample_results = []
     for i in indices:
         ex = examples_valid[i]
