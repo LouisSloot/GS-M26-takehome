@@ -148,7 +148,7 @@ DeBERTa is a single-sequence encoder. Turn the conversation into one string per 
 | 1–3 | `train_loop/prepare_data.py` | `train_loop/data/train.jsonl`, `val.jsonl`, `split_stats.json` |
 | 4–5 | `train_loop/dataset.py` | PyTorch Dataset, `get_dataloaders()`, `get_tokenizer()` |
 | 6 | `train_loop/train.py` | Model checkpoints, tokenizer in `--output_dir` |
-| 7–8 | `train_loop/eval_deberta.py` | AUPR, ROC-AUC, FPR@TPR; optional JSON output |
+| 7–8 | `eval/eval_deberta.py` | AUPR, ROC-AUC, FPR@TPR; optional JSON output |
 
 Config: `train_loop/config.py` (paths, `MAX_LENGTH=512`, `TRUNCATION_SIDE="left"`, label mapping).
 
