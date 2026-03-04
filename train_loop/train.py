@@ -7,8 +7,8 @@ Designed to run on Colab with A100.
 Writes logs (loss, metrics) to output_dir/train.log.
 
 Usage (Colab or local):
-  python train_loop/train.py --output_dir ./outputs/deberta-harm-v1
-  python train_loop/train.py --output_dir ./outputs/deberta-harm-v1 --epochs 3 --batch_size 32
+  python train_loop/train.py --output_dir ./models/deberta_finetuned
+  python train_loop/train.py --output_dir ./models/deberta_finetuned --epochs 3 --batch_size 32
 """
 
 import argparse
@@ -191,7 +191,7 @@ def train(
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Finetune DeBERTa-v3-base for binary harm classification")
-    parser.add_argument("--output_dir", type=str, default="./outputs/deberta-harm-v1", help="Model and checkpoint output directory")
+    parser.add_argument("--output_dir", type=str, default="./models/deberta_finetuned", help="Model and checkpoint output directory")
     parser.add_argument("--data_dir", type=Path, default=None, help="Override dir containing train.jsonl, val.jsonl (default: train_loop/data)")
     parser.add_argument("--epochs", type=int, default=3, help="Number of training epochs")
     parser.add_argument("--batch_size", type=int, default=16, help="Per-device train batch size (A100: 16–32)")

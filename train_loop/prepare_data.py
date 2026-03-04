@@ -1,7 +1,7 @@
 """
 Steps 1-3: Load 1-turn and 2-turn JSONL, filter, serialize to single string, stratified train/val split.
 
-Reads: train_formatted/1_turn.jsonl, train_formatted/2_turn_completed.jsonl
+Reads: data/train_data/formatted/1_turn.jsonl, data/train_data/formatted/2_turn_completed.jsonl
 Writes: train_loop/data/train.jsonl, train_loop/data/val.jsonl, train_loop/data/split_stats.json
 
 Each output line: {"text": str, "label": "harmful"|"unharmful", "category": str, "convo_length": 1|2}

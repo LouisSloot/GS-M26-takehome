@@ -5,7 +5,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 # Input (JSONL from data step)
-TRAIN_FORMATTED_DIR = PROJECT_ROOT / "train_formatted"
+TRAIN_FORMATTED_DIR = PROJECT_ROOT / "data" / "train_data" / "formatted"
 ONE_TURN_JSONL = TRAIN_FORMATTED_DIR / "1_turn.jsonl"
 TWO_TURN_COMPLETED_JSONL = TRAIN_FORMATTED_DIR / "2_turn_completed.jsonl"
 

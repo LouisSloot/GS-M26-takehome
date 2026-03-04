@@ -2,7 +2,7 @@
 
 ## Steps
 
-1. **prepare_data.py** (steps 1–3): Load `train_formatted/1_turn.jsonl` and `2_turn_completed.jsonl`, filter valid labels and completed 2-turn, serialize to single string (`User: ...\n\nAssistant: ...`), stratified train/val split.  
+1. **prepare_data.py** (steps 1–3): Load `data/train_data/formatted/1_turn.jsonl` and `2_turn_completed.jsonl`, filter valid labels and completed 2-turn, serialize to single string (`User: ...\n\nAssistant: ...`), stratified train/val split.  
    **Output:** `train_loop/data/train.jsonl`, `val.jsonl`, `split_stats.json`.
 
 2. **dataset.py** (steps 4–5): Load prepared JSONL, tokenize with DeBERTa (max_length=512, **left truncation**), expose PyTorch `Dataset` and `get_dataloaders()`.
@@ -16,7 +16,7 @@ From repo root:
 python train_loop/prepare_data.py
 
 # 2. Train (DeBERTa full finetune, Colab A100 friendly)
-python train_loop/train.py --output_dir ./outputs/deberta-harm-v1
+python train_loop/train.py --output_dir ./models/deberta_finetuned
 
 # Or use as a module
 from train_loop.dataset import get_dataloaders, get_tokenizer

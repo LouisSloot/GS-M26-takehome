@@ -2,14 +2,14 @@
 """
 Evaluate trained DeBERTa classifier on eval dataset.
 
-Loads a local DeBERTa checkpoint, runs inference on test_data_outputs/formatted/*.jsonl,
+Loads a local DeBERTa checkpoint, runs inference on data/test_data/formatted/*.jsonl,
 and reports: AUPR, ROC-AUC, FPR @ TPR 90%, FPR @ TPR 95%.
 Also outputs a 10-sample subset of predicted probabilities for deliverables.
 
 Usage:
-  python train_loop/eval_deberta.py --model_path outputs/deberta-harm-v1 --output results/eval_deberta.json
-  python train_loop/eval_deberta.py --model_path outputs/deberta-harm-v1/checkpoint-2200 --use_completed
-  python train_loop/eval_deberta.py --model_path outputs/deberta-harm-v1 --max_samples 500
+  python train_loop/eval_deberta.py --model_path models/deberta_finetuned --output results/eval_deberta.json
+  python train_loop/eval_deberta.py --model_path models/deberta_finetuned/checkpoint-2200 --use_completed
+  python train_loop/eval_deberta.py --model_path models/deberta_finetuned --max_samples 500
 
 Note: For valid ROC/FPR-at-TPR, the eval set must include both harmful and unharmful samples.
 Use the full eval set (omit --max_samples) for final numbers.
@@ -135,14 +135,14 @@ def main() -> int:
     parser.add_argument(
         "--model_path",
         type=Path,
-        default=REPO_ROOT / "outputs" / "deberta-harm-v1",
-        help="Path to DeBERTa checkpoint (default: outputs/deberta-harm-v1)",
+        default=REPO_ROOT / "models" / "deberta_finetuned",
+        help="Path to DeBERTa checkpoint (default: models/deberta_finetuned)",
     )
     parser.add_argument(
         "--data_dir",
         type=Path,
-        default=REPO_ROOT / "test_data_outputs" / "formatted",
-        help="Directory containing *_turn.jsonl (default: test_data_outputs/formatted)",
+        default=REPO_ROOT / "data" / "test_data" / "formatted",
+        help="Directory containing *_turn.jsonl (default: data/test_data/formatted)",
     )
     parser.add_argument(
         "--files",
