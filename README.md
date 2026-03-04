@@ -1,6 +1,6 @@
 # GS-M26 Takehome
 
-Binary harmful/unharmful classifier for multi-turn conversations, built with DeBERTa-v3-base fine-tuned on synthetic data across 9 harm categories (CBRN, Child Safety, Defamation, Defrauding, Espionage, Illegal Activities, IP/Copyright, Privacy, Self-Harm).
+Binary harmful/unharmful classifier for multi-turn conversations, built with DeBERTa-v3-base fine-tuned on synthetic data across 9 harm categories (see categories.txt).
 
 ---
 
@@ -50,4 +50,5 @@ python eval/eval_deberta.py --model_path models/deberta_finetuned --output resul
 ```
 
 Reports **AUPR**, **ROC-AUC**, **FPR @ TPR 90%**, **FPR @ TPR 95%** on `eval/data/test.jsonl`. Optional LLM baseline: `python eval/eval_baseline.py`.
+
 
