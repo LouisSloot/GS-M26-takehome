@@ -46,7 +46,7 @@ Data: `train_loop/data/train.jsonl`, `val.jsonl`. Config: `train_loop/config.py`
 Evaluate a trained checkpoint on the test set:
 
 ```bash
-python train_loop/eval_deberta.py --model_path models/deberta_finetuned --use_completed --output results/eval_deberta.json
+python eval/eval_deberta.py --model_path models/deberta_finetuned --output results/eval_deberta.json
 ```
 
-Reports **AUPR**, **ROC-AUC**, **FPR @ TPR 90%**, **FPR @ TPR 95%** on `data/test_data/formatted/*_turn_completed.jsonl`. Optional LLM baseline: `python train_loop/eval_baseline.py`.
+Reports **AUPR**, **ROC-AUC**, **FPR @ TPR 90%**, **FPR @ TPR 95%** on `eval/data/test.jsonl`. Optional LLM baseline: `python eval/eval_baseline.py`.
