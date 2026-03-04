@@ -74,7 +74,7 @@ NUM_AXES_WEIGHTS = [0.30, 0.55, 0.15]
 CATEGORY_KEYS = ["intent", "delivery", "emotional", "style", "format"]
 CATEGORY_WEIGHTS = [0.35, 0.25, 0.20, 0.10, 0.10]
 
-# Category folders under seed_prompts/generated/
+# Category folders under data/train_data/raw_seeds/generated/
 CATEGORY_FOLDERS = [
     "Child_Sexual_Abuse_and_Exploitation_and_Sex_Crimes",
     "Self-Harm_and_Suicide",
@@ -87,6 +87,7 @@ CATEGORY_FOLDERS = [
     "CBRN",
 ]
 
-DEFAULT_DATA_DIR = Path(__file__).resolve().parent.parent / "seed_prompts" / "generated"
-EXPANDED_OUTPUT_DIR = Path(__file__).resolve().parent.parent / "seed_prompts" / "expanded_all"
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+DEFAULT_DATA_DIR = REPO_ROOT / "data" / "train_data" / "raw_seeds" / "generated"
+EXPANDED_OUTPUT_DIR = REPO_ROOT / "data" / "train_data" / "raw_seeds" / "expanded_all"
 STATS_FILENAME = "expansion_stats.json"

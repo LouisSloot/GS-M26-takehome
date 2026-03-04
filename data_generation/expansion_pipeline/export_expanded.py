@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 class ExportExpandedStep(Step):
     """
-    Step that writes expanded prompts to seed_prompts/expanded_all/<category>/<label>_prompts.csv
+    Step that writes expanded prompts to data/train_data/raw_seeds/expanded_all/<category>/<label>_prompts.csv
     and tracks distribution stats to expansion_stats.json.
     """
 

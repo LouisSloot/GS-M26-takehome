@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 class Load2TurnTasks(GeneratorStep):
     """
-    GeneratorStep that loads prompts from seed_prompts and emits 2-turn tasks.
+    GeneratorStep that loads prompts from data/train_data/raw_seeds and emits 2-turn tasks.
     Each task has user_prompt, category, prompt_label, target_response_type.
     """
 

@@ -6,9 +6,10 @@ from expansion_pipeline.config import CATEGORY_FOLDERS
 
 # Paths
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-SEED_PROMPTS_DIR = PROJECT_ROOT / "seed_prompts" / "expanded_all"
+REPO_ROOT = PROJECT_ROOT.parent
+SEED_PROMPTS_DIR = REPO_ROOT / "data" / "train_data" / "raw_seeds" / "expanded_all"
 TRAIN_2TURN_DIR = PROJECT_ROOT / "train" / "2_turn"
-TRAIN_FORMATTED_DIR = PROJECT_ROOT / "train_formatted"
+TRAIN_FORMATTED_DIR = REPO_ROOT / "data" / "train_data" / "formatted"
 TRAIN_JSONL_FILENAME = "train.jsonl"
 STATS_FILENAME = "2turn_generation_stats.json"
 

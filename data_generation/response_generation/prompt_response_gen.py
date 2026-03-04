@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate 2nd-turn (assistant) responses for train_formatted/2_turn.jsonl.
+Generate 2nd-turn (assistant) responses for data/train_data/formatted/2_turn.jsonl.
 
 Reads 2_turn.jsonl (stubs: one user message per record). For each record:
 - Samples target response type from conditional distribution (prompt label → compliance/overrefusal/harmful).

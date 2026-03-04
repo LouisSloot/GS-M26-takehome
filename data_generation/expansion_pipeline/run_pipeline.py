@@ -33,7 +33,7 @@ def create_pipeline(
 
     Args:
         llm: distilabel LLM instance (e.g. OllamaLLM, vLLM, InferenceEndpointsLLM)
-        data_dir: Path to seed prompts (flat: seed_prompts/generated, eval: test_data_outputs)
+        data_dir: Path to seed prompts (flat: data/train_data/raw_seeds/generated, eval: data/test_data)
         output_dir: Path for expanded output
         structure: "flat" for train seeds, "eval" for eval seeds (category/n_turn/label)
         num_variations_per_seed: Number of variations per seed (default 9)
@@ -102,13 +102,13 @@ if __name__ == "__main__":
         "--data-dir",
         type=Path,
         default=None,
-        help="Input directory (default: seed_prompts/generated for flat, test_data_outputs for eval)",
+        help="Input directory (default: data/train_data/raw_seeds/generated for flat, data/test_data for eval)",
     )
     parser.add_argument(
         "--output-dir",
         type=Path,
         default=None,
-        help="Output directory (default: seed_prompts/expanded_all for flat, test_data_outputs/expanded for eval)",
+        help="Output directory (default: data/train_data/raw_seeds/expanded_all for flat, data/test_data/expanded for eval)",
     )
     parser.add_argument(
         "--structure",
@@ -142,8 +142,8 @@ if __name__ == "__main__":
     if args.structure == "eval":
         # Project root (expansion_pipeline -> data_generation -> project root)
         repo_root = Path(__file__).resolve().parent.parent.parent
-        default_data = repo_root / "test_data_outputs" / "raw_seeds"  # seeds live here
-        default_output = repo_root / "test_data_outputs" / "expanded"
+        default_data = repo_root / "data" / "test_data" / "raw_seeds"  # seeds live here
+        default_output = repo_root / "data" / "test_data" / "expanded"
     else:
         default_data = DEFAULT_DATA_DIR
         default_output = EXPANDED_OUTPUT_DIR

@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 class Export2TurnStep(Step):
     """
-    Step that appends 2-turn conversations to train_formatted/train.jsonl in OpenAI format.
+    Step that appends 2-turn conversations to data/train_data/formatted/train.jsonl in OpenAI format.
     Each line: {"messages": [{"role": "user", "content": ...}, {"role": "assistant", "content": ...}], "label": ..., "convo_length": 2, "category": ...}
     """
 
